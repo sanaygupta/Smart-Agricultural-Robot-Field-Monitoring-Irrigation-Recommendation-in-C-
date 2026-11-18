@@ -1,0 +1,10 @@
+=== Agricultural Field Monitoring Report ===
+Date : 16-Nov-2026
+Total Fields : 2
+Irrigation Required : 1
+Crop Health (Low < 70%) : 1
+
+--- Field-wise Details ---
+ID	GPS (Lat, Long)	Status
+1	(18.5201, 73.8567)	Irrigation + Attention
+2	(18.5205, 73.8571)	Normal
