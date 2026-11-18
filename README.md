@@ -1,21 +1,19 @@
-# File-Handling-in-C
+# Smart Agricultural Robot: Field Monitoring & Irrigation Recommendation in C   
 
 
 
-# Assignment 09: Copying Contents of One File to Another Using File Handling in C
+## Assignment 09: Smart Agricultural Robot - Field Monitoring and Irrigation Recommendation Using File Handling in C
 
 ## 1. Problem Statement
 
-Write a C program to copy the contents of one file to another using file handling.
+Develop a C program that stores soil moisture, temperature, humidity, crop health readings and GPS coordinates collected by an agricultural robot. Read the stored data to identify areas requiring irrigation and generate field-monitoring reports.
 
 ## 2. Objectives
 
-- To study file handling in C.
-- To understand how files are opened, read, written, and closed.
-- To learn the use of file pointers.
-- To understand the working of `fopen()` and `fclose()`.
-- To implement file copying using character input and output functions.
-- To understand different file opening modes in C.
+- Store agricultural field data collected by a robot in a file.
+- Read stored data and analyze it.
+- Identify areas requiring irrigation (low soil moisture).
+- Generate a field-monitoring summary report.
 
 ## 3. Theory
 
@@ -115,71 +113,94 @@ For this assignment, the source file is opened in `"r"` mode, while the destinat
 
 ## 4. Algorithm
 
-1. Start the program.
-2. Declare two file pointers for the source and destination files.
-3. Declare an integer variable to store each character read from the source file.
-4. Open the source file, `input.txt`, in read mode.
-5. Check whether the source file opened successfully.
-6. Open the destination file, `output.txt`, in write mode.
-7. Check whether the destination file opened successfully.
-8. Read characters from the source file using `fgetc()`.
-9. Write each character to the destination file using `fputc()`.
-10. Continue until the end of the source file is reached.
-11. Close both files using `fclose()`.
-12. Display a success message.
-13. Stop the program.
+1. Start.
+2. Define FieldRecord structure.
+3. Take sensor data from user and append to file.
+4. Read all records from file.
+5. For each record:
+   - Check soil moisture, crop health, temperature and humidity.
+6. Decide irrigation and field status.
+7. Generate and display field-monitoring report (field-wise decisions).
 
 ## 5. C Program
 
 ```c
 #include <stdio.h>
+#include <string.h>
+#define MOISTURE_LIMIT 30.0
 
-int main()
-{
-    FILE *source, *destination;
+#define HEALTH_LIMIT 70
+typedef struct {
+    int id;
+    float moisture, temperature, humidity;
+    int cropHealth;
+    float latitude, longitude;
+} FieldRecord;
+
+void addRecord() {
+    FILE *fp = fopen("field_data.txt", "a");
+    if (!fp) { printf("Error: Cannot open file\n"); return; }
+    FieldRecord r;
+    printf("Enter Field ID: "); scanf("%d", &r.id);
+    printf("Enter Soil Moisture (%%): "); scanf("%f", &r.moisture);
+    printf("Enter Temperature (°C): "); scanf("%f", &r.temperature);
+    printf("Enter Humidity (%%): "); scanf("%f", &r.humidity);
+    printf("Enter Crop Health (%%): "); scanf("%d", &r.cropHealth);
+    printf("Enter Latitude (°): "); scanf("%f", &r.latitude);
+    printf("Enter Longitude (°): "); scanf("%f", &r.longitude);
+    fwrite(&r, sizeof(FieldRecord), 1, fp);
+    fclose(fp);
+}
+
+void generateReport() {
+    FILE *fp = fopen("field_data.txt", "r");
+    FILE *rep = fopen("field_report.txt", "w");
+    if (!fp) { printf("No Readings Found\n"); return; }
+    FieldRecord r;
+    int total = 0, irrig = 0, low_health = 0;
+    fprintf(rep, "=== Agricultural Field Monitoring Report ===\n");
+    fprintf(rep, "Date : 16-Nov-2026\n");
+    while (fread(&r, sizeof(FieldRecord), 1, fp)) {
+        total++;
+        if (r.moisture < MOISTURE_LIMIT) irrig++;
+        if (r.cropHealth < HEALTH_LIMIT) low_health++;
+    }
+    fprintf(rep, "Total Fields : %d\n", total);
+    fprintf(rep, "Irrigation Required : %d\n", irrig);
+    fprintf(rep, "Crop Health (Low < 70%) : %d\n\n", low_health);
+    fprintf(rep, "--- Field-wise Details ---\n");
+    fprintf(rep, "ID\tGPS (Lat, Long)\tStatus\n");
+    
+    rewind(fp);
+    while (fread(&r, sizeof(FieldRecord), 1, fp)) {
+        char status[50] = "Normal";
+        if (r.moisture < MOISTURE_LIMIT && r.cropHealth < HEALTH_LIMIT)
+            strcpy(status, "Irrigation + Attention");
+        else if (r.moisture < MOISTURE_LIMIT)
+            strcpy(status, "Irrigation Required");
+        else if (r.cropHealth < HEALTH_LIMIT)
+            strcpy(status, "Crop Stress (Attention)");
+        
+        fprintf(rep, "%d\t(%.4f, %.4f)\t%s\n", r.id, r.latitude, r.longitude, status);
+    }
+    fclose(fp);
+    fclose(rep);
+    printf("Report generated: field_report.txt\n");
+}
+
+int main() {
     int ch;
-
-    source = fopen("input.txt", "r");
-
-    if (source == NULL)
-    {
-        printf("Error opening source file.\n");
-        return 1;
+    while (1) {
+        printf("\n--- Smart Agri Robot ---\n");
+        printf("1. Add Field Reading\n");
+        printf("2. Generate Field Report\n");
+        printf("3. Exit\n");
+        printf("Enter Choice: ");
+        scanf("%d", &ch);
+        if (ch == 1) addRecord();
+        else if (ch == 2) generateReport();
+        else if (ch == 3) break;
     }
-
-    destination = fopen("output.txt", "w");
-
-    if (destination == NULL)
-    {
-        printf("Error opening destination file.\n");
-        fclose(source);
-        return 1;
-    }
-
-    while ((ch = fgetc(source)) != EOF)
-    {
-        if (fputc(ch, destination) == EOF)
-        {
-            printf("Error writing to destination file.\n");
-            fclose(source);
-            fclose(destination);
-            return 1;
-        }
-    }
-
-    if (ferror(source))
-    {
-        printf("Error reading source file.\n");
-        fclose(source);
-        fclose(destination);
-        return 1;
-    }
-
-    fclose(source);
-    fclose(destination);
-
-    printf("File copied successfully.\n");
-
     return 0;
 }
 ```
@@ -229,21 +250,14 @@ The destination file contains the same text as the source file.
 
 ```mermaid
 flowchart TD
-    A([Start]) --> B[Open source file in read mode]
-    B --> C{Source opened?}
-    C -- No --> D[Display error]
-    D --> Z([Stop])
-    C -- Yes --> E[Open destination in write mode]
-    E --> F{Destination opened?}
-    F -- No --> G[Close source and display error]
-    G --> Z
-    F -- Yes --> H[Read a character]
-    H --> I{End of file?}
-    I -- No --> J[Write character to destination]
-    J --> H
-    I -- Yes --> K[Close both files]
-    K --> L[Display success message]
-    L --> Z
+    A([Start]) --> B[/Input / Read field data/]
+    B --> C[For each record]
+    C --> D{Moisture < 30%?}
+    D -- Yes --> E["Mark 'Irrigation Required'"]
+    D -- No --> F["'No Irrigation Needed'"]
+    E --> G["Generate field report<br/>(total fields, irrigation fields,<br/>low health fields)"]
+    F --> G
+    G --> H([End])
 ```
 
 ## 8. FAQs
