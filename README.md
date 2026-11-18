@@ -167,7 +167,8 @@ void generateReport() {
     }
     fprintf(rep, "Total Fields : %d\n", total);
     fprintf(rep, "Irrigation Required : %d\n", irrig);
-    fprintf(rep, "Crop Health (Low < 70%) : %d\n\n", low_health);
+    // Yahan pe '%' ko '%%' kar diya hai taaki warning na aaye
+    fprintf(rep, "Crop Health (Low < 70%%) : %d\n\n", low_health);
     fprintf(rep, "--- Field-wise Details ---\n");
     fprintf(rep, "ID\tGPS (Lat, Long)\tStatus\n");
     
